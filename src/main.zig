@@ -29,13 +29,13 @@ fn vid_flip() void {
     }
 }
 
-fn drawRainbow() void {
+fn drawRainbow(shift: u8) void {
     var i : u16 = 0;
     // Make a rainbow gradient:
-    while (i < (c.SCREEN_WIDTH * c.SCREEN_HEIGHT / 2)) : (i += 1) {
+    while (i < (c.SCREEN_WIDTH * c.SCREEN_HEIGHT / 16)) : (i += 1) {
         // We cannot write each u8 individually, we need to
         // write two byte words at a time.
-        const left_side = i % 255;
+        const left_side = (i + shift) % 255;
         const right_side = left_side;
 
         screen[i] = @as(u16, (left_side | (right_side << 8)));
@@ -65,14 +65,25 @@ export fn main(_: c_int, _: [*]const [*:0]const u8) void {
 
     var frame : u8 = 1;
     while (true) {
-    drawRainbow();
+        drawRainbow(frame);
         system.vblank_intr_wait();
-        resetPalette(frame);
 
-        if (frame == 255) {
-            frame = 0;
-        } else {
-            frame += 4;
+        c.scanKeys();
+        var keys = c.keysDown();
+        // check if A is pressed:
+        if (keys & c.KEY_LEFT != 0) {
+            if (frame >= 250) {
+                frame = 0;
+            } else {
+                frame += 4;
+            }
+        }
+        if (keys & c.KEY_RIGHT != 0) {
+            if (frame <= 4) {
+                frame = 255;
+            } else {
+                frame -= 4;
+            }
         }
     }
 }
